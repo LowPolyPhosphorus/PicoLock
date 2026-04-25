@@ -10,8 +10,7 @@ RELAY_PIN = 15
 UNLOCK_DURATION = secrets.UNLOCK_DURATION if hasattr(secrets, 'UNLOCK_DURATION') else 2
 CONFIG_FILE = "config.json"
 
-relay = Pin(RELAY_PIN, Pin.OUT)
-relay.low()
+relay = Pin(RELAY_PIN, Pin.OUT, value=0)
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -68,7 +67,6 @@ def send_404(conn):
 def get_body(conn, request):
     parts = request.split("\r\n\r\n", 1)
     body = parts[1] if len(parts) > 1 else ""
-    # read Content-Length and grab any remaining bytes
     for line in request.split("\r\n"):
         if line.lower().startswith("content-length:"):
             total = int(line.split(":")[1].strip())
@@ -87,18 +85,15 @@ def serve(ip):
     s.bind(addr)
     s.listen(3)
     print("Serving on http://" + ip)
-
     while True:
         conn, addr = s.accept()
         try:
             request = conn.recv(2048).decode("utf-8", "ignore")
             if not request:
                 continue
-
             if "POST /unlock" in request:
                 unlock()
                 send_ok(conn)
-
             elif "GET /config" in request:
                 if config_exists():
                     with open(CONFIG_FILE, "r") as f:
@@ -106,24 +101,20 @@ def serve(ip):
                     send_json(conn, data)
                 else:
                     send_404(conn)
-
             elif "POST /save" in request:
                 body = get_body(conn, request)
                 if body:
                     with open(CONFIG_FILE, "w") as f:
                         f.write(body)
                 send_ok(conn)
-
             elif "POST /wipe" in request:
                 try:
                     os.remove(CONFIG_FILE)
                 except:
                     pass
                 send_ok(conn)
-
             else:
                 send_html(conn)
-
         except Exception as e:
             print("Error:", e)
         finally:
