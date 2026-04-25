@@ -261,7 +261,7 @@ svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:no
         <div class="subtitle">Customize PicoLock</div>
         <div class="divider"></div>
         <div class="section-label">Lock info</div>
-        <input class="neo-input" type="text" id="s-name" placeholder="Lock name" maxlength="20">
+        <input class="neo-input" type="text" id="s-lock-name" placeholder="Lock name" maxlength="20">
         <input class="neo-input" type="text" id="s-greeting" placeholder="Greeting text" maxlength="30">
         <div class="divider"></div>
         <div class="section-label">Timing</div>
@@ -570,7 +570,7 @@ $('settings-auth-btn').onclick=function(){
   else{setMsg('settings-auth-msg','Wrong master password',false);}
 };
 function openSettings(){
-  $('s-name').value=S.lockName;$('s-greeting').value=S.greeting;
+  $('s-lock-name').value=S.lockName;$('s-greeting').value=S.greeting;
   $('grad-from').value=S.gradFrom;$('grad-to').value=S.gradTo;
   $('grad-picker').style.display=(S.bg==='gradient')?'block':'none';
   buildColorGrid();buildFontGrid();buildBgGrid();show('s-settings');
@@ -592,7 +592,7 @@ $('change-method-btn').onclick=function(){
   $('method-btn').style.display='none';$('method-msg').textContent='';show('s-method');
 };
 $('settings-save-btn').onclick=function(){
-  var nn=$('s-name').value.trim();var ng=$('s-greeting').value.trim();
+  var nn=$('s-lock-name').value.trim();var ng=$('s-greeting').value.trim();
   if(nn){S.lockName=nn;$('lock-title-display').textContent=nn;}
   if(ng){S.greeting=ng;$('lock-greeting-display').textContent=ng;}
   var nmp=$('s-new-mp').value;if(nmp){S.masterPw=nmp;$('s-new-mp').value='';}
