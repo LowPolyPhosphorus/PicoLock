@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PicoLock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@400;500&family=Nunito:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{min-height:100%}
+body{
+  min-height:100vh;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font);
+  transition:background .4s;
+  background:var(--bg1);
+}
+:root{
+  --accent:#a78bfa;
+  --bg1:#1a1a2e;
+  --bg2:#252540;
+  --shadow-out:10px 10px 26px #0d0d1f,-10px -10px 26px #272746;
+  --shadow-in:inset 5px 5px 13px #0d0d1f,inset -5px -5px 13px #272746;
+  --shadow-btn:6px 6px 15px #0d0d1f,-6px -6px 15px #272746;
+  --shadow-btn-in:inset 4px 4px 10px #0d0d1f,inset -4px -4px 10px #272746;
+  --font:'Inter',sans-serif;
+}
+canvas#bgc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:.2;z-index:0}
+svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:.14;z-index:0}
+
+.app{position:relative;z-index:1;width:100%;max-width:440px;padding:2rem 1.5rem;display:flex;align-items:flex-start;justify-content:center;min-height:100vh}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;padding-top:1.5rem;position:relative;z-index:2}
+.screen.active{display:flex}
+.neo-card{background:var(--bg1);border-radius:24px;box-shadow:var(--shadow-out);padding:2rem;width:100%;max-width:340px}
+.neo-input{width:100%;padding:12px 15px;border-radius:12px;border:none;background:var(--bg1);box-shadow:var(--shadow-in);color:#c0c0d8;font-size:14px;outline:none;margin-bottom:.75rem;font-family:var(--font)}
+.neo-input::placeholder{color:#3f3f5a}
+.neo-input:focus{box-shadow:var(--shadow-in),0 0 0 2px rgba(167,139,250,.25)}
+.primary-btn{width:100%;padding:14px;border-radius:14px;font-size:14px;font-weight:500;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;color:var(--accent);cursor:pointer;letter-spacing:.04em;margin-top:.5rem;transition:box-shadow .1s;font-family:var(--font)}
+.primary-btn:active{box-shadow:var(--shadow-btn-in)}
+.neo-btn{background:var(--bg1);border:none;border-radius:12px;box-shadow:var(--shadow-btn);cursor:pointer;color:#c0c0d8;font-size:13px;font-weight:500;transition:box-shadow .1s,color .1s;font-family:var(--font)}
+.neo-btn:active,.neo-btn.sel{box-shadow:var(--shadow-btn-in);color:var(--accent)}
+.title{font-size:20px;font-weight:500;color:#c0c0d8;text-align:center;margin-bottom:.2rem}
+.subtitle{font-size:13px;color:#555;text-align:center;margin-bottom:1.1rem;line-height:1.5}
+.step-label{font-size:11px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;text-align:center}
+.msg{text-align:center;font-size:13px;min-height:18px;margin:.35rem 0}
+.divider{height:1px;background:#252540;margin:.85rem 0}
+.section-label{font-size:11px;color:#555;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
+.progress-dots{display:flex;gap:6px;justify-content:center;margin-bottom:1.1rem}
+.prog-dot{width:6px;height:6px;border-radius:50%;background:#252540;transition:background .2s,width .25s}
+.prog-dot.on{background:var(--accent);width:16px;border-radius:3px}
+.dot-row{display:flex;gap:10px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.dot{width:13px;height:13px;border-radius:50%;background:var(--bg1);box-shadow:inset 3px 3px 7px #0d0d1f,inset -3px -3px 7px #272746;transition:background .15s;flex-shrink:0}
+.dot.filled{background:var(--accent);box-shadow:0 0 10px rgba(167,139,250,.65)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:.75rem}
+.num-btn{aspect-ratio:1;border-radius:14px;font-size:19px;font-weight:500;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;color:#c0c0d8;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:box-shadow .1s,color .1s;font-family:var(--font);user-select:none}
+.num-btn:active{box-shadow:var(--shadow-btn-in);color:var(--accent)}
+.pat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:1rem;border-radius:14px;box-shadow:var(--shadow-in);margin-bottom:.85rem}
+.pat-dot{width:28px;height:28px;border-radius:50%;background:var(--bg1);box-shadow:3px 3px 8px #0d0d1f,-3px -3px 8px #272746;cursor:pointer;margin:auto;transition:all .15s}
+.pat-dot.sel{background:var(--accent);box-shadow:0 0 12px rgba(167,139,250,.6)}
+.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.method-card{padding:.9rem .5rem;border-radius:14px;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;color:#666;cursor:pointer;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .15s;font-family:var(--font)}
+.method-card.sel{box-shadow:var(--shadow-btn-in);color:var(--accent)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
+.settings-label{font-size:13px;color:#888}
+.settings-val{font-size:13px;color:var(--accent);font-weight:500;min-width:48px;text-align:right}
+.neo-range{-webkit-appearance:none;width:90px;height:5px;border-radius:3px;background:var(--bg1);box-shadow:inset 2px 2px 5px #0d0d1f,inset -2px -2px 5px #272746;outline:none}
+.neo-range::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--accent);box-shadow:2px 2px 6px #0d0d1f;cursor:pointer}
+.cog-btn,.back-btn{position:fixed;width:38px;height:38px;border-radius:50%;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:100;top:1.25rem;color:#888;transition:color .15s}
+.cog-btn{right:1.25rem}.back-btn{left:1.25rem}
+.cog-btn:active,.back-btn:active{box-shadow:var(--shadow-btn-in)}
+.cog-btn:hover,.back-btn:hover{color:var(--accent)}
+.lockout-box{display:none;flex-direction:column;align-items:center;gap:.75rem}
+.lockout-box.active{display:flex}
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:.85rem}
+.color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border .15s,transform .1s;margin:auto}
+.color-swatch:hover{transform:scale(1.15)}
+.color-swatch.active{border-color:#fff}
+.grad-row{display:flex;gap:10px;margin-bottom:.85rem}
+.grad-row label{font-size:12px;color:#666;flex:1;display:flex;flex-direction:column;gap:5px}
+.grad-row input[type=color]{width:100%;height:30px;border-radius:8px;border:none;background:none;cursor:pointer;padding:0}
+.font-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:.85rem}
+.font-btn{padding:9px;border-radius:10px;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;color:#888;cursor:pointer;font-size:13px;transition:all .15s}
+.font-btn.sel{box-shadow:var(--shadow-btn-in);color:var(--accent)}
+.bg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:.6rem}
+.bg-btn{padding:9px;border-radius:10px;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;color:#888;cursor:pointer;font-size:12px;transition:all .15s;height:44px}
+.bg-btn.sel{box-shadow:var(--shadow-btn-in);color:var(--accent)}
+.shake{animation:shake .35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.flash-red{animation:flashred .4s ease}
+@keyframes flashred{0%,100%{box-shadow:var(--shadow-out)}50%{box-shadow:0 0 0 3px #f87171,var(--shadow-out)}}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.toggle{width:38px;height:21px;border-radius:11px;background:var(--bg1);box-shadow:var(--shadow-in);position:relative;cursor:pointer;border:none}
+.toggle-thumb{width:15px;height:15px;border-radius:50%;background:#444;position:absolute;top:3px;left:3px;transition:all .2s}
+.toggle.on .toggle-thumb{background:var(--accent);left:20px}
+.settings-scroll{max-height:80vh;overflow-y:auto;padding-right:4px}
+.settings-scroll::-webkit-scrollbar{width:3px}
+.settings-scroll::-webkit-scrollbar-thumb{background:var(--bg2);border-radius:2px}
+.pin-len-row{display:flex;gap:8px;margin-bottom:.85rem}
+.pin-len-btn{flex:1;padding:8px 0;font-size:13px}
+</style>
+</head>
+<body>
+
+<canvas id="bgc" style="display:none"></canvas>
+<svg id="geo-svg" style="display:none" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<button class="cog-btn" id="cog-btn">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</button>
+<button class="back-btn" id="back-btn">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
+
+<div class="app" id="app">
+
+  <!-- WELCOME -->
+  <div class="screen active" id="s-welcome">
+    <div class="neo-card">
+      <div style="display:flex;justify-content:center;margin-bottom:1.25rem">
+        <div style="width:58px;height:58px;border-radius:17px;background:var(--bg1);box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+      </div>
+      <div class="title">PicoLock</div>
+      <div class="subtitle">WiFi smart lock powered by Raspberry Pi Pico WH. Let's get you set up.</div>
+      <div class="progress-dots"><div class="prog-dot on"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div></div>
+      <button class="primary-btn" id="start-btn">Get started</button>
+    </div>
+  </div>
+
+  <!-- MASTER PASSWORD -->
+  <div class="screen" id="s-master">
+    <div class="neo-card">
+      <div class="step-label">Step 1 of 4</div>
+      <div class="title">Master password</div>
+      <div class="subtitle">This unlocks settings and clears lockouts. Keep it safe.</div>
+      <div class="progress-dots"><div class="prog-dot"></div><div class="prog-dot on"></div><div class="prog-dot"></div><div class="prog-dot"></div></div>
+      <input class="neo-input" type="password" id="mp1" placeholder="Master password">
+      <input class="neo-input" type="password" id="mp2" placeholder="Confirm password">
+      <div class="msg" id="mp-msg"></div>
+      <button class="primary-btn" id="mp-btn">Continue</button>
+    </div>
+  </div>
+
+  <!-- NAME + GREETING -->
+  <div class="screen" id="s-name">
+    <div class="neo-card">
+      <div class="step-label">Step 2 of 4</div>
+      <div class="title">Name your lock</div>
+      <div class="subtitle">Shows on the lock screen.</div>
+      <div class="progress-dots"><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot on"></div><div class="prog-dot"></div></div>
+      <input class="neo-input" type="text" id="lock-name-input" placeholder="Lock name (e.g. PicoLock)" maxlength="20">
+      <input class="neo-input" type="text" id="lock-greeting-input" placeholder="Greeting (e.g. Welcome home)" maxlength="30">
+      <div class="msg" id="name-msg"></div>
+      <button class="primary-btn" id="name-btn">Continue</button>
+    </div>
+  </div>
+
+  <!-- UNLOCK METHOD -->
+  <div class="screen" id="s-method">
+    <div class="neo-card">
+      <div class="step-label">Step 3 of 4</div>
+      <div class="title">Unlock method</div>
+      <div class="subtitle">Pick how you want to unlock.</div>
+      <div class="progress-dots"><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot on"></div></div>
+      <div class="method-grid">
+        <button class="method-card" id="mc-pin">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/></svg>
+          PIN
+        </button>
+        <button class="method-card" id="mc-pattern">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="19" cy="5" r="1.5" fill="currentColor"/><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/><circle cx="5" cy="19" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/><circle cx="19" cy="19" r="1.5" fill="currentColor"/></svg>
+          Pattern
+        </button>
+        <button class="method-card" id="mc-password">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Password
+        </button>
+      </div>
+      <div id="cred-pin" style="display:none">
+        <div class="section-label">PIN length</div>
+        <div class="pin-len-row">
+          <button class="neo-btn pin-len-btn sel" data-len="4">4 digits</button>
+          <button class="neo-btn pin-len-btn" data-len="6">6 digits</button>
+          <button class="neo-btn pin-len-btn" data-len="8">8 digits</button>
+        </div>
+        <div class="dot-row" id="sd-row"></div>
+        <div class="numpad" id="setup-numpad"></div>
+      </div>
+      <div id="cred-pattern" style="display:none">
+        <div class="subtitle" style="margin-bottom:.5rem">Draw a pattern (4+ dots)</div>
+        <div class="pat-grid" id="setup-pat"></div>
+      </div>
+      <div id="cred-password" style="display:none">
+        <input class="neo-input" type="password" id="cred-pw" placeholder="Set unlock password">
+      </div>
+      <div class="msg" id="method-msg"></div>
+      <button class="primary-btn" id="method-btn" style="display:none">Finish setup</button>
+    </div>
+  </div>
+
+  <!-- LOCK SCREEN -->
+  <div class="screen" id="s-lock">
+    <div class="neo-card" id="lock-card">
+      <div style="display:flex;justify-content:center;margin-bottom:.85rem">
+        <div style="width:46px;height:46px;border-radius:13px;background:var(--bg1);box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+      </div>
+      <div class="title" id="lock-title-display">PicoLock</div>
+      <div class="subtitle" id="lock-greeting-display" style="margin-bottom:1rem">Welcome</div>
+      <div id="lock-normal">
+        <div id="lk-pin">
+          <div class="dot-row" id="ld-row"></div>
+          <div class="numpad" id="lock-numpad"></div>
+        </div>
+        <div id="lk-pattern" style="display:none">
+          <div class="subtitle" style="margin-bottom:.5rem">Draw your pattern</div>
+          <div class="pat-grid" id="lock-pat"></div>
+        </div>
+        <div id="lk-password" style="display:none">
+          <input class="neo-input" type="password" id="lock-pw" placeholder="Password">
+        </div>
+        <div class="msg" id="lock-msg"></div>
+        <button class="primary-btn" id="unlock-btn">Unlock</button>
+      </div>
+      <div class="lockout-box" id="lockout-ui">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div style="color:#f87171;font-size:14px;font-weight:500">Too many attempts</div>
+        <div style="color:#555;font-size:13px;text-align:center;line-height:1.5">Enter your master password to restore access</div>
+        <input class="neo-input" type="password" id="mp-override" placeholder="Master password" style="margin-bottom:0">
+        <div class="msg" id="override-msg"></div>
+        <button class="primary-btn" id="override-btn" style="margin-top:0">Restore access</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS AUTH -->
+  <div class="screen" id="s-settings-auth">
+    <div class="neo-card">
+      <div style="display:flex;justify-content:center;margin-bottom:1rem">
+        <div style="width:52px;height:52px;border-radius:16px;background:var(--bg1);box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+      </div>
+      <div class="title">Settings</div>
+      <div class="subtitle">Enter your master password to continue</div>
+      <input class="neo-input" type="password" id="settings-auth-input" placeholder="Master password">
+      <div class="msg" id="settings-auth-msg"></div>
+      <button class="primary-btn" id="settings-auth-btn">Enter settings</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="screen" id="s-settings">
+    <div class="neo-card">
+      <div class="settings-scroll">
+        <div class="title" style="margin-bottom:.25rem">Settings</div>
+        <div class="subtitle">Customize PicoLock</div>
+        <div class="divider"></div>
+        <div class="section-label">Lock info</div>
+        <input class="neo-input" type="text" id="s-name" placeholder="Lock name" maxlength="20">
+        <input class="neo-input" type="text" id="s-greeting" placeholder="Greeting text" maxlength="30">
+        <div class="divider"></div>
+        <div class="section-label">Timing</div>
+        <div class="settings-row"><span class="settings-label">Unlock duration</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="10" value="2" step="1" id="s-dur"><span class="settings-val" id="s-dur-v">2s</span></div></div>
+        <div class="settings-row"><span class="settings-label">Auto relock after</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="30" value="5" step="1" id="s-relock"><span class="settings-val" id="s-relock-v">5s</span></div></div>
+        <div class="settings-row"><span class="settings-label">Lockout after</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="10" value="3" step="1" id="s-attempts"><span class="settings-val" id="s-attempts-v">3 tries</span></div></div>
+        <div class="divider"></div>
+        <div class="section-label">Behaviour</div>
+        <div class="toggle-row"><span class="settings-label">Quick unlock (auto submit)</span><button class="toggle" id="t-quick" onclick="toggleIt('quick')"><div class="toggle-thumb"></div></button></div>
+        <div class="toggle-row"><span class="settings-label">Button haptics</span><button class="toggle on" id="t-haptics" onclick="toggleIt('haptics')"><div class="toggle-thumb"></div></button></div>
+        <div class="divider"></div>
+        <div class="section-label">Appearance</div>
+        <div style="font-size:12px;color:#666;margin-bottom:.5rem">Accent color</div>
+        <div class="color-grid" id="color-grid"></div>
+        <div style="font-size:12px;color:#666;margin-bottom:.5rem">Font</div>
+        <div class="font-grid" id="font-grid"></div>
+        <div style="font-size:12px;color:#666;margin-bottom:.5rem">Background</div>
+        <div class="bg-grid" id="bg-grid"></div>
+        <div id="grad-picker" style="display:none;margin-bottom:.6rem">
+          <div style="font-size:12px;color:#666;margin-bottom:.4rem">Gradient colors</div>
+          <div class="grad-row">
+            <label>From<input type="color" id="grad-from" value="#1a1a2e"></label>
+            <label>To<input type="color" id="grad-to" value="#2d1b4e"></label>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="section-label">Security</div>
+        <button class="neo-btn" id="change-method-btn" style="width:100%;padding:11px;margin-bottom:.5rem">Change unlock method</button>
+        <input class="neo-input" type="password" id="s-new-mp" placeholder="New master password (optional)">
+        <button class="primary-btn" id="settings-save-btn">Save and close</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var S={
+  masterPw:'',method:'',pin:'',pattern:[],unlockPw:'',
+  attempts:0,lockout:false,pinLen:4,
+  lockName:'PicoLock',greeting:'Welcome',
+  quickUnlock:false,haptics:true,
+  settingsAuthed:false,
+  accent:'#a78bfa',font:'Inter',bg:'solid',
+  gradFrom:'#1a1a2e',gradTo:'#2d1b4e'
+};
+var setupPinEntry='',setupPatSel=[],lockPinEntry='',lockPatSel=[];
+var selectedMethod=null;
+var animFrame=null;
+
+var COLORS=['#a78bfa','#60a5fa','#34d399','#fb923c','#f472b6','#e879f9','#facc15','#f87171','#38bdf8','#a3e635','#ff6b6b','#4ade80'];
+var FONTS=[
+  {n:'Inter',l:'Inter'},
+  {n:'JetBrains Mono',l:'JetBrains Mono'},
+  {n:'Playfair Display',l:'Playfair Display'},
+  {n:'Nunito',l:'Nunito'}
+];
+var BGS=[{k:'solid',l:'Solid'},{k:'gradient',l:'Gradient'},{k:'geo',l:'Geometric'},{k:'anim',l:'Animated'}];
+
+function $(id){return document.getElementById(id);}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  $(id).classList.add('active');
+  $('cog-btn').style.display=(id==='s-lock')?'flex':'none';
+  $('back-btn').style.display=(id==='s-settings')?'flex':'none';
+}
+
+function setMsg(id,txt,ok){var e=$(id);e.style.color=ok?'#4ade80':'#f87171';e.textContent=txt;}
+function vibrate(ms){if(S.haptics&&navigator.vibrate)navigator.vibrate(ms||30);}
+
+function applyAccent(c){
+  document.documentElement.style.setProperty('--accent',c);
+}
+function applyFont(f){
+  document.documentElement.style.setProperty('--font',"'"+f+"',sans-serif");
+}
+function applyBg(k){
+  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
+  $('bgc').style.display='none';
+  $('geo-svg').style.display='none';
+  document.body.style.background='';
+
+  if(k==='solid'){
+    document.body.style.background='var(--bg1)';
+  }else if(k==='gradient'){
+    document.body.style.background='linear-gradient(135deg,'+S.gradFrom+' 0%,'+S.gradTo+' 100%)';
+  }else if(k==='geo'){
+    document.body.style.background='var(--bg1)';
+    drawGeo();
+  }else if(k==='anim'){
+    document.body.style.background='var(--bg1)';
+    startAnim();
+  }
+  var gp=$('grad-picker');if(gp)gp.style.display=(k==='gradient')?'block':'none';
+}
+
+function drawGeo(){
+  var svg=$('geo-svg');
+  var W=window.innerWidth,H=window.innerHeight;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.style.display='block';
+  svg.innerHTML='';
+  for(var i=0;i<35;i++){
+    var cx=Math.random()*W,cy=Math.random()*H;
+    var r=Math.random()*70+15;
+    var sides=Math.random()>.5?3:4;
+    var pts=[];
+    for(var j=0;j<sides;j++){
+      var a=j*2*Math.PI/sides - Math.PI/2;
+      pts.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1));
+    }
+    var el=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    el.setAttribute('points',pts.join(' '));
+    el.setAttribute('fill','none');
+    el.setAttribute('stroke',S.accent);
+    el.setAttribute('stroke-opacity','0.2');
+    el.setAttribute('stroke-width','1.5');
+    svg.appendChild(el);
+    // some filled
+    if(Math.random()>.65){
+      var el2=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      el2.setAttribute('points',pts.join(' '));
+      el2.setAttribute('fill',S.accent);
+      el2.setAttribute('fill-opacity','0.05');
+      el2.setAttribute('stroke','none');
+      svg.appendChild(el2);
+    }
+  }
+}
+
+function startAnim(){
+  var c=$('bgc');
+  c.style.display='block';
+  c.width=window.innerWidth;
+  c.height=window.innerHeight;
+  var ctx=c.getContext('2d');
+  var particles=[];
+  var W=c.width,H=c.height;
+  for(var i=0;i<28;i++){
+    particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.8,vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45});
+  }
+  window.addEventListener('resize',function(){
+    c.width=window.innerWidth;c.height=window.innerHeight;W=c.width;H=c.height;
+  });
+  function draw(){
+    W=c.width;H=c.height;
+    ctx.clearRect(0,0,W,H);
+    for(var a=0;a<particles.length;a++){
+      for(var b=a+1;b<particles.length;b++){
+        var dx=particles[a].x-particles[b].x,dy=particles[a].y-particles[b].y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<130){ctx.strokeStyle=S.accent;ctx.globalAlpha=(1-d/130)*.4;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(particles[a].x,particles[a].y);ctx.lineTo(particles[b].x,particles[b].y);ctx.stroke();ctx.globalAlpha=1;}
+      }
+    }
+    ctx.fillStyle=S.accent;ctx.globalAlpha=.65;
+    particles.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    animFrame=requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function buildNumpad(cid,onDigit,onBack){
+  var c=$(cid);c.innerHTML='';
+  [1,2,3,4,5,6,7,8,9,'',0,'<'].forEach(function(n){
+    var b=document.createElement('button');b.className='num-btn';
+    if(n===''){b.style.visibility='hidden';}
+    else if(n==='<'){b.textContent='⌫';b.onclick=function(){vibrate(20);onBack();};}
+    else{b.textContent=String(n);b.onclick=function(){vibrate(20);onDigit(String(n));};}
+    c.appendChild(b);
+  });
+}
+function updateDots(prefix,entry,max){
+  var row=$(prefix+'-row');if(!row)return;row.innerHTML='';
+  for(var i=0;i<max;i++){var d=document.createElement('div');d.className='dot'+(i<entry.length?' filled':'');row.appendChild(d);}
+}
+function buildPatGrid(cid,arr){
+  var c=$(cid);c.innerHTML='';
+  for(var i=0;i<16;i++){(function(idx){var d=document.createElement('div');d.className='pat-dot';d.onclick=function(){vibrate(20);var pos=arr.indexOf(idx);if(pos===-1){arr.push(idx);d.classList.add('sel');}else{arr.splice(pos,1);d.classList.remove('sel');}};c.appendChild(d);})(i);}
+}
+function clearPat(cid,arr){arr.length=0;$(cid).querySelectorAll('.pat-dot').forEach(function(d){d.classList.remove('sel');});}
+
+function buildColorGrid(){
+  var g=$('color-grid');g.innerHTML='';
+  COLORS.forEach(function(c){
+    var s=document.createElement('div');s.className='color-swatch'+(c===S.accent?' active':'');s.style.background=c;
+    s.onclick=function(){S.accent=c;applyAccent(c);if(S.bg==='geo')drawGeo();document.querySelectorAll('.color-swatch').forEach(function(x){x.classList.remove('active');});s.classList.add('active');};
+    g.appendChild(s);
+  });
+}
+function buildFontGrid(){
+  var g=$('font-grid');g.innerHTML='';
+  FONTS.forEach(function(f){
+    var b=document.createElement('button');b.className='font-btn'+(f.n===S.font?' sel':'');b.style.fontFamily="'"+f.n+"',sans-serif";b.textContent=f.l;
+    b.onclick=function(){S.font=f.n;applyFont(f.n);document.querySelectorAll('.font-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};
+    g.appendChild(b);
+  });
+}
+function buildBgGrid(){
+  var g=$('bg-grid');g.innerHTML='';
+  BGS.forEach(function(bg){
+    var b=document.createElement('button');b.className='bg-btn'+(bg.k===S.bg?' sel':'');b.textContent=bg.l;
+    b.onclick=function(){S.bg=bg.k;applyBg(bg.k);document.querySelectorAll('.bg-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};
+    g.appendChild(b);
+  });
+}
+
+$('grad-from').oninput=function(){S.gradFrom=this.value;if(S.bg==='gradient')applyBg('gradient');};
+$('grad-to').oninput=function(){S.gradTo=this.value;if(S.bg==='gradient')applyBg('gradient');};
+
+document.querySelectorAll('.pin-len-btn').forEach(function(b){
+  b.onclick=function(){
+    S.pinLen=parseInt(b.dataset.len);setupPinEntry='';updateDots('sd',setupPinEntry,S.pinLen);
+    document.querySelectorAll('.pin-len-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');
+  };
+});
+
+buildNumpad('setup-numpad',function(n){if(setupPinEntry.length<S.pinLen){setupPinEntry+=n;updateDots('sd',setupPinEntry,S.pinLen);}},function(){setupPinEntry=setupPinEntry.slice(0,-1);updateDots('sd',setupPinEntry,S.pinLen);});
+buildNumpad('lock-numpad',function(n){if(!S.lockout&&lockPinEntry.length<S.pinLen){lockPinEntry+=n;updateDots('ld',lockPinEntry,S.pinLen);if(S.quickUnlock&&lockPinEntry.length===S.pinLen)tryUnlock();}},function(){if(!S.lockout){lockPinEntry=lockPinEntry.slice(0,-1);updateDots('ld',lockPinEntry,S.pinLen);}});
+buildPatGrid('setup-pat',setupPatSel);
+buildPatGrid('lock-pat',lockPatSel);
+updateDots('sd',setupPinEntry,4);
+updateDots('ld',lockPinEntry,4);
+
+$('start-btn').onclick=function(){show('s-master');};
+
+$('mp-btn').onclick=function(){
+  var p1=$('mp1').value,p2=$('mp2').value;
+  if(!p1){setMsg('mp-msg','Enter a password',false);return;}
+  if(p1!==p2){setMsg('mp-msg','Passwords do not match',false);return;}
+  S.masterPw=p1;$('mp-msg').textContent='';show('s-name');
+};
+
+$('name-btn').onclick=function(){
+  var n=$('lock-name-input').value.trim()||'PicoLock';
+  var g=$('lock-greeting-input').value.trim()||'Welcome';
+  S.lockName=n;S.greeting=g;$('lock-title-display').textContent=n;$('lock-greeting-display').textContent=g;show('s-method');
+};
+
+['pin','pattern','password'].forEach(function(m){
+  $('mc-'+m).onclick=function(){
+    selectedMethod=m;
+    ['pin','pattern','password'].forEach(function(x){$('mc-'+x).classList.remove('sel');$('cred-'+x).style.display='none';});
+    $('mc-'+m).classList.add('sel');$('cred-'+m).style.display='block';$('method-btn').style.display='block';
+    setupPinEntry='';updateDots('sd',setupPinEntry,S.pinLen);clearPat('setup-pat',setupPatSel);$('method-msg').textContent='';
+  };
+});
+
+$('method-btn').onclick=function(){
+  if(!selectedMethod){setMsg('method-msg','Pick a method',false);return;}
+  if(selectedMethod==='pin'){if(setupPinEntry.length<S.pinLen){setMsg('method-msg','Enter '+S.pinLen+' digits',false);return;}S.pin=setupPinEntry;}
+  else if(selectedMethod==='pattern'){if(setupPatSel.length<4){setMsg('method-msg','Select at least 4 dots',false);return;}S.pattern=setupPatSel.slice();}
+  else{var pw=$('cred-pw').value;if(!pw){setMsg('method-msg','Enter a password',false);return;}S.unlockPw=pw;}
+  S.method=selectedMethod;$('method-msg').textContent='';
+  $('lk-pin').style.display=S.method==='pin'?'':'none';
+  $('lk-pattern').style.display=S.method==='pattern'?'':'none';
+  $('lk-password').style.display=S.method==='password'?'':'none';
+  updateDots('ld',lockPinEntry,S.pinLen);show('s-lock');
+};
+
+function tryUnlock(){
+  if(S.lockout)return;
+  var ok=false;
+  if(S.method==='pin')ok=lockPinEntry===S.pin;
+  else if(S.method==='pattern')ok=S.pattern.length===lockPatSel.length&&S.pattern.every(function(v,i){return v===lockPatSel[i];});
+  else ok=$('lock-pw').value===S.unlockPw;
+  if(ok){
+    S.attempts=0;vibrate(60);setMsg('lock-msg','Unlocked',true);
+    lockPinEntry='';updateDots('ld',lockPinEntry,S.pinLen);clearPat('lock-pat',lockPatSel);$('lock-pw').value='';
+    fetch('/unlock',{method:'POST'}).catch(function(){});
+    setTimeout(function(){$('lock-msg').textContent='';},3000);
+  }else{
+    S.attempts++;vibrate([50,30,50]);
+    var card=$('lock-card');
+    card.classList.remove('shake','flash-red');void card.offsetWidth;
+    card.classList.add('shake','flash-red');
+    setTimeout(function(){card.classList.remove('shake','flash-red');},400);
+    lockPinEntry='';updateDots('ld',lockPinEntry,S.pinLen);clearPat('lock-pat',lockPatSel);
+    var max=parseInt($('s-attempts').value)||3;
+    if(S.attempts>=max){S.lockout=true;$('lock-normal').style.display='none';$('lockout-ui').classList.add('active');}
+    else{setMsg('lock-msg','Wrong — '+(max-S.attempts)+' left',false);}
+  }
+}
+$('unlock-btn').onclick=tryUnlock;
+$('lock-pw').addEventListener('keydown',function(e){if(e.key==='Enter')tryUnlock();});
+
+$('override-btn').onclick=function(){
+  if($('mp-override').value===S.masterPw){
+    S.lockout=false;S.attempts=0;$('lock-normal').style.display='block';$('lockout-ui').classList.remove('active');
+    $('mp-override').value='';$('override-msg').textContent='';
+    setMsg('lock-msg','Access restored',true);setTimeout(function(){$('lock-msg').textContent='';},2000);
+  }else{setMsg('override-msg','Wrong master password',false);}
+};
+
+$('cog-btn').onclick=function(){
+  if(S.settingsAuthed){openSettings();return;}
+  $('settings-auth-input').value='';$('settings-auth-msg').textContent='';show('s-settings-auth');
+};
+$('settings-auth-btn').onclick=function(){
+  if($('settings-auth-input').value===S.masterPw){S.settingsAuthed=true;openSettings();}
+  else{setMsg('settings-auth-msg','Wrong master password',false);}
+};
+function openSettings(){
+  $('s-name').value=S.lockName;$('s-greeting').value=S.greeting;
+  $('grad-from').value=S.gradFrom;$('grad-to').value=S.gradTo;
+  $('grad-picker').style.display=(S.bg==='gradient')?'block':'none';
+  buildColorGrid();buildFontGrid();buildBgGrid();show('s-settings');
+}
+$('back-btn').onclick=function(){show('s-lock');};
+$('s-dur').oninput=function(){$('s-dur-v').textContent=this.value+'s';};
+$('s-relock').oninput=function(){$('s-relock-v').textContent=this.value+'s';};
+$('s-attempts').oninput=function(){$('s-attempts-v').textContent=this.value+' tries';};
+
+function toggleIt(k){
+  var el=$('t-'+k);el.classList.toggle('on');
+  if(k==='quick')S.quickUnlock=el.classList.contains('on');
+  if(k==='haptics')S.haptics=el.classList.contains('on');
+}
+
+$('change-method-btn').onclick=function(){
+  selectedMethod=null;
+  ['pin','pattern','password'].forEach(function(x){$('mc-'+x).classList.remove('sel');$('cred-'+x).style.display='none';});
+  $('method-btn').style.display='none';$('method-msg').textContent='';show('s-method');
+};
+$('settings-save-btn').onclick=function(){
+  var nn=$('s-name').value.trim();var ng=$('s-greeting').value.trim();
+  if(nn){S.lockName=nn;$('lock-title-display').textContent=nn;}
+  if(ng){S.greeting=ng;$('lock-greeting-display').textContent=ng;}
+  var nmp=$('s-new-mp').value;if(nmp){S.masterPw=nmp;}
+  show('s-lock');
+};
+</script>
+</body>
+</html>
