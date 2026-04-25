@@ -7,10 +7,17 @@ from machine import Pin
 import secrets
 
 RELAY_PIN = 15
-UNLOCK_DURATION = secrets.UNLOCK_DURATION if hasattr(secrets, 'UNLOCK_DURATION') else 2
 CONFIG_FILE = "config.json"
 
 relay = Pin(RELAY_PIN, Pin.OUT, value=0)
+
+def get_unlock_duration():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            cfg = json.load(f)
+        return cfg.get("unlockDuration", 2)
+    except:
+        return getattr(secrets, "UNLOCK_DURATION", 2)
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -21,13 +28,31 @@ def connect_wifi():
         if wlan.isconnected():
             ip = wlan.ifconfig()[0]
             print("Connected:", ip)
-            return ip
+            return ip, wlan
         time.sleep(1)
     raise RuntimeError("WiFi connection failed")
 
+def setup_mdns(hostname):
+    try:
+        import network
+        sta = network.WLAN(network.STA_IF)
+        sta.config(dhcp_hostname=hostname)
+        print("mDNS hostname:", hostname + ".local")
+    except Exception as e:
+        print("mDNS setup failed:", e)
+
+def get_mdns_hostname():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            cfg = json.load(f)
+        return cfg.get("mdnsHostname", "picolock")
+    except:
+        return "picolock"
+
 def unlock():
+    dur = get_unlock_duration()
     relay.high()
-    time.sleep(UNLOCK_DURATION)
+    time.sleep(dur)
     relay.low()
 
 def config_exists():
@@ -85,6 +110,8 @@ def serve(ip):
     s.bind(addr)
     s.listen(3)
     print("Serving on http://" + ip)
+    hostname = get_mdns_hostname()
+    print("Also try: http://" + hostname + ".local")
     while True:
         conn, addr = s.accept()
         try:
@@ -101,11 +128,21 @@ def serve(ip):
                     send_json(conn, data)
                 else:
                     send_404(conn)
+            elif "GET /manifest.json" in request:
+                with open("manifest.json", "r") as f:
+                    data = f.read()
+                conn.send(("HTTP/1.1 200 OK\r\nContent-Type: application/manifest+json\r\nContent-Length: "+str(len(data))+"\r\nConnection: close\r\n\r\n").encode())
+                conn.send(data.encode())
+            elif "GET /info" in request:
+                hostname = get_mdns_hostname()
+                info = json.dumps({"ip": ip, "hostname": hostname + ".local"})
+                send_json(conn, info)
             elif "POST /save" in request:
                 body = get_body(conn, request)
                 if body:
                     with open(CONFIG_FILE, "w") as f:
                         f.write(body)
+                    setup_mdns(get_mdns_hostname())
                 send_ok(conn)
             elif "POST /wipe" in request:
                 try:
@@ -120,5 +157,6 @@ def serve(ip):
         finally:
             conn.close()
 
-ip = connect_wifi()
+ip, wlan = connect_wifi()
+setup_mdns(get_mdns_hostname())
 serve(ip)
