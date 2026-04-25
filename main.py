@@ -1,6 +1,7 @@
 import network
 import socket
 import time
+import os
 from machine import Pin
 import secrets
 
@@ -28,19 +29,22 @@ def unlock():
     time.sleep(UNLOCK_DURATION)
     relay.low()
 
-def send_response(conn, status, content_type, body):
-    body_bytes = body if isinstance(body, bytes) else body.encode()
+def send_html(conn):
+    size = os.stat("picolock.html")[6]
     header = (
-        f"HTTP/1.1 {status}\r\n"
-        f"Content-Type: {content_type}\r\n"
-        f"Content-Length: {len(body_bytes)}\r\n"
-        f"Connection: close\r\n\r\n"
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: " + str(size) + "\r\n"
+        "Connection: close\r\n\r\n"
     )
     conn.send(header.encode())
-    # send in chunks in case file is large
-    chunk = 512
-    for i in range(0, len(body_bytes), chunk):
-        conn.send(body_bytes[i:i+chunk])
+    with open("picolock.html", "rb") as f:
+        while True:
+            chunk = f.read(256)
+            if not chunk:
+                break
+            conn.send(chunk)
+            time.sleep(0.01)
 
 def serve(ip):
     addr = socket.getaddrinfo(ip, 80)[0][-1]
@@ -48,10 +52,7 @@ def serve(ip):
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
     s.listen(3)
-    print(f"Serving on http://{ip}")
-
-    with open("picolock.html", "r") as f:
-        html = f.read()
+    print("Serving on http://" + ip)
 
     while True:
         conn, addr = s.accept()
@@ -59,13 +60,11 @@ def serve(ip):
             request = conn.recv(2048).decode("utf-8", "ignore")
             if not request:
                 continue
-
             if "POST /unlock" in request:
                 unlock()
-                send_response(conn, "200 OK", "text/plain", "ok")
+                conn.send(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok")
             else:
-                send_response(conn, "200 OK", "text/html", html)
-
+                send_html(conn)
         except Exception as e:
             print("Error:", e)
         finally:
