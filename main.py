@@ -65,9 +65,20 @@ def send_ok(conn):
 def send_404(conn):
     conn.send(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 
-def get_body(request):
+def get_body(conn, request):
     parts = request.split("\r\n\r\n", 1)
-    return parts[1] if len(parts) > 1 else ""
+    body = parts[1] if len(parts) > 1 else ""
+    # read Content-Length and grab any remaining bytes
+    for line in request.split("\r\n"):
+        if line.lower().startswith("content-length:"):
+            total = int(line.split(":")[1].strip())
+            while len(body) < total:
+                more = conn.recv(512)
+                if not more:
+                    break
+                body += more.decode("utf-8", "ignore")
+            break
+    return body
 
 def serve(ip):
     addr = socket.getaddrinfo(ip, 80)[0][-1]
@@ -97,7 +108,7 @@ def serve(ip):
                     send_404(conn)
 
             elif "POST /save" in request:
-                body = get_body(request)
+                body = get_body(conn, request)
                 if body:
                     with open(CONFIG_FILE, "w") as f:
                         f.write(body)
