@@ -292,6 +292,7 @@ svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:no
         <button class="neo-btn" id="change-method-btn" style="width:100%;padding:11px;margin-bottom:.5rem">Change unlock method</button>
         <input class="neo-input" type="password" id="s-new-mp" placeholder="New master password (optional)">
         <button class="primary-btn" id="settings-save-btn">Save and close</button>
+        <button class="neo-btn" id="wipe-btn" style="width:100%;padding:11px;margin-top:.5rem;color:#f87171;">Wipe and reset</button>
       </div>
     </div>
   </div>
@@ -523,7 +524,7 @@ $('method-btn').onclick=function(){
   $('lk-pin').style.display=S.method==='pin'?'':'none';
   $('lk-pattern').style.display=S.method==='pattern'?'':'none';
   $('lk-password').style.display=S.method==='password'?'':'none';
-  updateDots('ld',lockPinEntry,S.pinLen);show('s-lock');
+  updateDots('ld',lockPinEntry,S.pinLen);saveConfig();show('s-lock');
 };
 
 function tryUnlock(){
@@ -594,9 +595,65 @@ $('settings-save-btn').onclick=function(){
   var nn=$('s-name').value.trim();var ng=$('s-greeting').value.trim();
   if(nn){S.lockName=nn;$('lock-title-display').textContent=nn;}
   if(ng){S.greeting=ng;$('lock-greeting-display').textContent=ng;}
-  var nmp=$('s-new-mp').value;if(nmp){S.masterPw=nmp;}
+  var nmp=$('s-new-mp').value;if(nmp){S.masterPw=nmp;$('s-new-mp').value='';}
+  saveConfig();
   show('s-lock');
 };
+
+$('wipe-btn').onclick=function(){
+  if(!confirm('Wipe all settings and return to onboarding?'))return;
+  fetch('/wipe',{method:'POST'}).catch(function(){});
+  location.reload();
+};
+
+function saveConfig(){
+  var cfg={
+    masterPw:S.masterPw,method:S.method,pin:S.pin,
+    pattern:S.pattern,unlockPw:S.unlockPw,pinLen:S.pinLen,
+    lockName:S.lockName,greeting:S.greeting,
+    quickUnlock:S.quickUnlock,haptics:S.haptics,
+    accent:S.accent,font:S.font,bg:S.bg,
+    gradFrom:S.gradFrom,gradTo:S.gradTo
+  };
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).catch(function(){});
+}
+
+function applyConfig(cfg){
+  S.masterPw=cfg.masterPw||'';
+  S.method=cfg.method||'';
+  S.pin=cfg.pin||'';
+  S.pattern=cfg.pattern||[];
+  S.unlockPw=cfg.unlockPw||'';
+  S.pinLen=cfg.pinLen||4;
+  S.lockName=cfg.lockName||'PicoLock';
+  S.greeting=cfg.greeting||'Welcome';
+  S.quickUnlock=cfg.quickUnlock||false;
+  S.haptics=cfg.haptics!==false;
+  S.accent=cfg.accent||'#a78bfa';
+  S.font=cfg.font||'Inter';
+  S.bg=cfg.bg||'solid';
+  S.gradFrom=cfg.gradFrom||'#1a1a2e';
+  S.gradTo=cfg.gradTo||'#2d1b4e';
+  applyAccent(S.accent);
+  applyFont(S.font);
+  applyBg(S.bg);
+  $('lock-title-display').textContent=S.lockName;
+  $('lock-greeting-display').textContent=S.greeting;
+  $('lk-pin').style.display=S.method==='pin'?'':'none';
+  $('lk-pattern').style.display=S.method==='pattern'?'':'none';
+  $('lk-password').style.display=S.method==='password'?'':'none';
+  updateDots('ld',lockPinEntry,S.pinLen);
+  show('s-lock');
+}
+
+fetch('/config').then(function(r){
+  if(r.ok)return r.json();
+  throw new Error('no config');
+}).then(function(cfg){
+  applyConfig(cfg);
+}).catch(function(){
+  show('s-welcome');
+});
 </script>
 </body>
 </html>
