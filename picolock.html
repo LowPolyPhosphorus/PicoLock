@@ -4,23 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PicoLock</title>
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PicoLock">
+<link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@400;500&family=Nunito:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{min-height:100%}
-body{
-  min-height:100vh;width:100%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--font);
-  transition:background .4s;
-  background:var(--bg1);
-}
+body{min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;font-family:var(--font);transition:background .4s;background:var(--bg1);}
 :root{
-  --accent:#a78bfa;
-  --bg1:#1a1a2e;
-  --bg2:#252540;
+  --accent:#a78bfa;--bg1:#1a1a2e;--bg2:#252540;
   --shadow-out:10px 10px 26px #0d0d1f,-10px -10px 26px #272746;
   --shadow-in:inset 5px 5px 13px #0d0d1f,inset -5px -5px 13px #272746;
   --shadow-btn:6px 6px 15px #0d0d1f,-6px -6px 15px #272746;
@@ -29,7 +26,6 @@ body{
 }
 canvas#bgc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:.2;z-index:0}
 svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:.14;z-index:0}
-
 .app{position:relative;z-index:1;width:100%;max-width:440px;padding:2rem 1.5rem;display:flex;align-items:flex-start;justify-content:center;min-height:100vh}
 .screen{display:none;flex-direction:column;align-items:center;width:100%;padding-top:1.5rem;position:relative;z-index:2}
 .screen.active{display:flex}
@@ -99,10 +95,22 @@ svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:no
 .settings-scroll::-webkit-scrollbar-thumb{background:var(--bg2);border-radius:2px}
 .pin-len-row{display:flex;gap:8px;margin-bottom:.85rem}
 .pin-len-btn{flex:1;padding:8px 0;font-size:13px}
+.lock-icon-wrap{display:flex;justify-content:center;margin-bottom:.85rem}
+.lock-icon-btn{width:46px;height:46px;border-radius:13px;background:var(--bg1);box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center;border:none;cursor:default;transition:box-shadow .3s}
+.lock-icon-btn.unlocked{box-shadow:0 0 0 2px var(--accent),var(--shadow-btn)}
+@keyframes lockpop{0%{transform:scale(1)}40%{transform:scale(1.18)}70%{transform:scale(.94)}100%{transform:scale(1)}}
+.lock-icon-btn.pop{animation:lockpop .35s ease}
+.log-entry{font-size:12px;color:#666;padding:.4rem 0;border-bottom:1px solid #252540;display:flex;justify-content:space-between;gap:1rem}
+.log-entry:last-child{border-bottom:none}
+.log-entry .log-type{color:var(--accent)}
+.log-entry .log-type.fail{color:#f87171}
+.adv-section{background:var(--bg1);border-radius:14px;box-shadow:var(--shadow-in);padding:1rem;margin-bottom:.85rem}
+.tab-row{display:flex;gap:8px;margin-bottom:1rem}
+.tab-btn{flex:1;padding:9px 0;border-radius:10px;font-size:12px;background:var(--bg1);box-shadow:var(--shadow-btn);border:none;color:#666;cursor:pointer;transition:all .15s;font-family:var(--font)}
+.tab-btn.sel{box-shadow:var(--shadow-btn-in);color:var(--accent)}
 </style>
 </head>
 <body>
-
 <canvas id="bgc" style="display:none"></canvas>
 <svg id="geo-svg" style="display:none" xmlns="http://www.w3.org/2000/svg"></svg>
 
@@ -167,16 +175,13 @@ svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:no
       <div class="progress-dots"><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot on"></div></div>
       <div class="method-grid">
         <button class="method-card" id="mc-pin">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/></svg>
-          PIN
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/></svg>PIN
         </button>
         <button class="method-card" id="mc-pattern">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="19" cy="5" r="1.5" fill="currentColor"/><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/><circle cx="5" cy="19" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/><circle cx="19" cy="19" r="1.5" fill="currentColor"/></svg>
-          Pattern
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="19" cy="5" r="1.5" fill="currentColor"/><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/><circle cx="5" cy="19" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/><circle cx="19" cy="19" r="1.5" fill="currentColor"/></svg>Pattern
         </button>
         <button class="method-card" id="mc-password">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Password
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Password
         </button>
       </div>
       <div id="cred-pin" style="display:none">
@@ -204,10 +209,13 @@ svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:no
   <!-- LOCK SCREEN -->
   <div class="screen" id="s-lock">
     <div class="neo-card" id="lock-card">
-      <div style="display:flex;justify-content:center;margin-bottom:.85rem">
-        <div style="width:46px;height:46px;border-radius:13px;background:var(--bg1);box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
+      <div class="lock-icon-wrap">
+        <button class="lock-icon-btn" id="lock-icon-btn">
+          <svg id="lock-svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path id="lock-shackle" d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </button>
       </div>
       <div class="title" id="lock-title-display">PicoLock</div>
       <div class="subtitle" id="lock-greeting-display" style="margin-bottom:1rem">Welcome</div>
@@ -259,40 +267,73 @@ svg#geo-svg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:no
       <div class="settings-scroll">
         <div class="title" style="margin-bottom:.25rem">Settings</div>
         <div class="subtitle">Customize PicoLock</div>
-        <div class="divider"></div>
-        <div class="section-label">Lock info</div>
-        <input class="neo-input" type="text" id="s-lock-name" placeholder="Lock name" maxlength="20">
-        <input class="neo-input" type="text" id="s-greeting" placeholder="Greeting text" maxlength="30">
-        <div class="divider"></div>
-        <div class="section-label">Timing</div>
-        <div class="settings-row"><span class="settings-label">Unlock duration</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="10" value="2" step="1" id="s-dur"><span class="settings-val" id="s-dur-v">2s</span></div></div>
-        <div class="settings-row"><span class="settings-label">Auto relock after</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="30" value="5" step="1" id="s-relock"><span class="settings-val" id="s-relock-v">5s</span></div></div>
-        <div class="settings-row"><span class="settings-label">Lockout after</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="10" value="3" step="1" id="s-attempts"><span class="settings-val" id="s-attempts-v">3 tries</span></div></div>
-        <div class="divider"></div>
-        <div class="section-label">Behaviour</div>
-        <div class="toggle-row"><span class="settings-label">Quick unlock (auto submit)</span><button class="toggle" id="t-quick" onclick="toggleIt('quick')"><div class="toggle-thumb"></div></button></div>
-        <div class="toggle-row"><span class="settings-label">Button haptics</span><button class="toggle on" id="t-haptics" onclick="toggleIt('haptics')"><div class="toggle-thumb"></div></button></div>
-        <div class="divider"></div>
-        <div class="section-label">Appearance</div>
-        <div style="font-size:12px;color:#666;margin-bottom:.5rem">Accent color</div>
-        <div class="color-grid" id="color-grid"></div>
-        <div style="font-size:12px;color:#666;margin-bottom:.5rem">Font</div>
-        <div class="font-grid" id="font-grid"></div>
-        <div style="font-size:12px;color:#666;margin-bottom:.5rem">Background</div>
-        <div class="bg-grid" id="bg-grid"></div>
-        <div id="grad-picker" style="display:none;margin-bottom:.6rem">
-          <div style="font-size:12px;color:#666;margin-bottom:.4rem">Gradient colors</div>
-          <div class="grad-row">
-            <label>From<input type="color" id="grad-from" value="#1a1a2e"></label>
-            <label>To<input type="color" id="grad-to" value="#2d1b4e"></label>
+        <div class="tab-row">
+          <button class="tab-btn sel" id="tab-general" onclick="switchTab('general')">General</button>
+          <button class="tab-btn" id="tab-appearance" onclick="switchTab('appearance')">Appearance</button>
+          <button class="tab-btn" id="tab-advanced" onclick="switchTab('advanced')">Advanced</button>
+        </div>
+
+        <!-- GENERAL TAB -->
+        <div id="tab-general-content">
+          <div class="section-label">Lock info</div>
+          <input class="neo-input" type="text" id="s-lock-name" placeholder="Lock name" maxlength="20">
+          <input class="neo-input" type="text" id="s-greeting" placeholder="Greeting text" maxlength="30">
+          <div class="divider"></div>
+          <div class="section-label">Timing</div>
+          <div class="settings-row"><span class="settings-label">Unlock duration</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="10" value="2" step="1" id="s-dur"><span class="settings-val" id="s-dur-v">2s</span></div></div>
+          <div class="settings-row"><span class="settings-label">Lockout after</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="10" value="3" step="1" id="s-attempts"><span class="settings-val" id="s-attempts-v">3 tries</span></div></div>
+          <div class="settings-row"><span class="settings-label">Session timeout</span><div style="display:flex;align-items:center;gap:8px"><input type="range" class="neo-range" min="1" max="60" value="10" step="1" id="s-session-timeout"><span class="settings-val" id="s-session-timeout-v">10m</span></div></div>
+          <div class="divider"></div>
+          <div class="section-label">Behaviour</div>
+          <div class="toggle-row"><span class="settings-label">Quick unlock (auto submit)</span><button class="toggle" id="t-quick" onclick="toggleIt('quick')"><div class="toggle-thumb"></div></button></div>
+          <div class="toggle-row"><span class="settings-label">Button haptics</span><button class="toggle on" id="t-haptics" onclick="toggleIt('haptics')"><div class="toggle-thumb"></div></button></div>
+          <div class="divider"></div>
+          <div class="section-label">Security</div>
+          <button class="neo-btn" id="change-method-btn" style="width:100%;padding:11px;margin-bottom:.5rem">Change unlock method</button>
+          <input class="neo-input" type="password" id="s-new-mp" placeholder="New master password (optional)">
+        </div>
+
+        <!-- APPEARANCE TAB -->
+        <div id="tab-appearance-content" style="display:none">
+          <div class="section-label">Accent color</div>
+          <div class="color-grid" id="color-grid"></div>
+          <div class="section-label">Font</div>
+          <div class="font-grid" id="font-grid"></div>
+          <div class="section-label">Background</div>
+          <div class="bg-grid" id="bg-grid"></div>
+          <div id="grad-picker" style="display:none;margin-bottom:.6rem">
+            <div style="font-size:12px;color:#666;margin-bottom:.4rem">Gradient colors</div>
+            <div class="grad-row">
+              <label>From<input type="color" id="grad-from" value="#1a1a2e"></label>
+              <label>To<input type="color" id="grad-to" value="#2d1b4e"></label>
+            </div>
           </div>
         </div>
-        <div class="divider"></div>
-        <div class="section-label">Security</div>
-        <button class="neo-btn" id="change-method-btn" style="width:100%;padding:11px;margin-bottom:.5rem">Change unlock method</button>
-        <input class="neo-input" type="password" id="s-new-mp" placeholder="New master password (optional)">
+
+        <!-- ADVANCED TAB -->
+        <div id="tab-advanced-content" style="display:none">
+          <div class="section-label">Network</div>
+          <div class="adv-section">
+            <div style="font-size:12px;color:#666;margin-bottom:.4rem">mDNS hostname</div>
+            <input class="neo-input" type="text" id="s-mdns" placeholder="picolock" maxlength="32" style="margin-bottom:.4rem">
+            <div style="font-size:11px;color:#444">Access via <span id="mdns-preview" style="color:var(--accent)">picolock.local</span></div>
+          </div>
+          <div class="adv-section" style="margin-top:.6rem">
+            <div style="font-size:12px;color:#888;margin-bottom:.25rem">Device IP</div>
+            <div style="font-size:14px;color:var(--accent);font-weight:500" id="wifi-ip-display">Loading...</div>
+            <div style="font-size:12px;color:#888;margin-top:.4rem;margin-bottom:.25rem">Hostname</div>
+            <div style="font-size:14px;color:var(--accent);font-weight:500" id="wifi-hostname-display">Loading...</div>
+          </div>
+          <div class="divider"></div>
+          <div class="section-label">Unlock history</div>
+          <div class="adv-section" id="unlock-log-container">
+            <div style="color:#555;font-size:13px;text-align:center">No history yet</div>
+          </div>
+          <div class="divider"></div>
+          <button class="neo-btn" id="wipe-btn" style="width:100%;padding:11px;color:#f87171;">Wipe and reset</button>
+        </div>
+
         <button class="primary-btn" id="settings-save-btn">Save and close</button>
-        <button class="neo-btn" id="wipe-btn" style="width:100%;padding:11px;margin-top:.5rem;color:#f87171;">Wipe and reset</button>
       </div>
     </div>
   </div>
@@ -305,21 +346,18 @@ var S={
   attempts:0,lockout:false,pinLen:4,
   lockName:'PicoLock',greeting:'Welcome',
   quickUnlock:false,haptics:true,
-  settingsAuthed:false,
+  settingsAuthed:false,settingsAuthTime:0,
   accent:'#a78bfa',font:'Inter',bg:'solid',
-  gradFrom:'#1a1a2e',gradTo:'#2d1b4e'
+  gradFrom:'#1a1a2e',gradTo:'#2d1b4e',
+  unlockDuration:2,maxAttempts:3,sessionTimeout:10,
+  mdnsHostname:'picolock',
+  unlockHistory:[]
 };
 var setupPinEntry='',setupPatSel=[],lockPinEntry='',lockPatSel=[];
-var selectedMethod=null;
-var animFrame=null;
+var selectedMethod=null,animFrame=null,sessionTimer=null;
 
 var COLORS=['#a78bfa','#60a5fa','#34d399','#fb923c','#f472b6','#e879f9','#facc15','#f87171','#38bdf8','#a3e635','#ff6b6b','#4ade80'];
-var FONTS=[
-  {n:'Inter',l:'Inter'},
-  {n:'JetBrains Mono',l:'JetBrains Mono'},
-  {n:'Playfair Display',l:'Playfair Display'},
-  {n:'Nunito',l:'Nunito'}
-];
+var FONTS=[{n:'Inter',l:'Inter'},{n:'JetBrains Mono',l:'JetBrains Mono'},{n:'Playfair Display',l:'Playfair Display'},{n:'Nunito',l:'Nunito'}];
 var BGS=[{k:'solid',l:'Solid'},{k:'gradient',l:'Gradient'},{k:'geo',l:'Geometric'},{k:'anim',l:'Animated'}];
 
 function $(id){return document.getElementById(id);}
@@ -334,99 +372,82 @@ function show(id){
 function setMsg(id,txt,ok){var e=$(id);e.style.color=ok?'#4ade80':'#f87171';e.textContent=txt;}
 function vibrate(ms){if(S.haptics&&navigator.vibrate)navigator.vibrate(ms||30);}
 
-function applyAccent(c){
-  document.documentElement.style.setProperty('--accent',c);
-}
-function applyFont(f){
-  document.documentElement.style.setProperty('--font',"'"+f+"',sans-serif");
-}
+function applyAccent(c){document.documentElement.style.setProperty('--accent',c);}
+function applyFont(f){document.documentElement.style.setProperty('--font',"'"+f+"',sans-serif");}
 function applyBg(k){
   if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
-  $('bgc').style.display='none';
-  $('geo-svg').style.display='none';
-  document.body.style.background='';
-
-  if(k==='solid'){
-    document.body.style.background='var(--bg1)';
-  }else if(k==='gradient'){
-    document.body.style.background='linear-gradient(135deg,'+S.gradFrom+' 0%,'+S.gradTo+' 100%)';
-  }else if(k==='geo'){
-    document.body.style.background='var(--bg1)';
-    drawGeo();
-  }else if(k==='anim'){
-    document.body.style.background='var(--bg1)';
-    startAnim();
-  }
+  $('bgc').style.display='none';$('geo-svg').style.display='none';document.body.style.background='';
+  if(k==='solid'){document.body.style.background='var(--bg1)';}
+  else if(k==='gradient'){document.body.style.background='linear-gradient(135deg,'+S.gradFrom+' 0%,'+S.gradTo+' 100%)';}
+  else if(k==='geo'){document.body.style.background='var(--bg1)';drawGeo();}
+  else if(k==='anim'){document.body.style.background='var(--bg1)';startAnim();}
   var gp=$('grad-picker');if(gp)gp.style.display=(k==='gradient')?'block':'none';
 }
 
 function drawGeo(){
-  var svg=$('geo-svg');
-  var W=window.innerWidth,H=window.innerHeight;
-  svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.style.display='block';
-  svg.innerHTML='';
+  var svg=$('geo-svg'),W=window.innerWidth,H=window.innerHeight;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.style.display='block';svg.innerHTML='';
   for(var i=0;i<35;i++){
-    var cx=Math.random()*W,cy=Math.random()*H;
-    var r=Math.random()*70+15;
-    var sides=Math.random()>.5?3:4;
-    var pts=[];
-    for(var j=0;j<sides;j++){
-      var a=j*2*Math.PI/sides - Math.PI/2;
-      pts.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1));
-    }
+    var cx=Math.random()*W,cy=Math.random()*H,r=Math.random()*70+15,sides=Math.random()>.5?3:4,pts=[];
+    for(var j=0;j<sides;j++){var a=j*2*Math.PI/sides-Math.PI/2;pts.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1));}
     var el=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    el.setAttribute('points',pts.join(' '));
-    el.setAttribute('fill','none');
-    el.setAttribute('stroke',S.accent);
-    el.setAttribute('stroke-opacity','0.2');
-    el.setAttribute('stroke-width','1.5');
+    el.setAttribute('points',pts.join(' '));el.setAttribute('fill','none');el.setAttribute('stroke',S.accent);el.setAttribute('stroke-opacity','0.2');el.setAttribute('stroke-width','1.5');
     svg.appendChild(el);
-    // some filled
-    if(Math.random()>.65){
-      var el2=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-      el2.setAttribute('points',pts.join(' '));
-      el2.setAttribute('fill',S.accent);
-      el2.setAttribute('fill-opacity','0.05');
-      el2.setAttribute('stroke','none');
-      svg.appendChild(el2);
-    }
+    if(Math.random()>.65){var el2=document.createElementNS('http://www.w3.org/2000/svg','polygon');el2.setAttribute('points',pts.join(' '));el2.setAttribute('fill',S.accent);el2.setAttribute('fill-opacity','0.05');el2.setAttribute('stroke','none');svg.appendChild(el2);}
   }
 }
 
 function startAnim(){
-  var c=$('bgc');
-  c.style.display='block';
-  c.width=window.innerWidth;
-  c.height=window.innerHeight;
-  var ctx=c.getContext('2d');
-  var particles=[];
-  var W=c.width,H=c.height;
-  for(var i=0;i<28;i++){
-    particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.8,vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45});
-  }
-  window.addEventListener('resize',function(){
-    c.width=window.innerWidth;c.height=window.innerHeight;W=c.width;H=c.height;
-  });
+  var c=$('bgc');c.style.display='block';c.width=window.innerWidth;c.height=window.innerHeight;
+  var ctx=c.getContext('2d'),particles=[],W=c.width,H=c.height;
+  for(var i=0;i<28;i++){particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.8,vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45});}
+  window.addEventListener('resize',function(){c.width=window.innerWidth;c.height=window.innerHeight;W=c.width;H=c.height;});
   function draw(){
-    W=c.width;H=c.height;
-    ctx.clearRect(0,0,W,H);
-    for(var a=0;a<particles.length;a++){
-      for(var b=a+1;b<particles.length;b++){
-        var dx=particles[a].x-particles[b].x,dy=particles[a].y-particles[b].y,d=Math.sqrt(dx*dx+dy*dy);
-        if(d<130){ctx.strokeStyle=S.accent;ctx.globalAlpha=(1-d/130)*.4;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(particles[a].x,particles[a].y);ctx.lineTo(particles[b].x,particles[b].y);ctx.stroke();ctx.globalAlpha=1;}
-      }
-    }
+    W=c.width;H=c.height;ctx.clearRect(0,0,W,H);
+    for(var a=0;a<particles.length;a++){for(var b=a+1;b<particles.length;b++){var dx=particles[a].x-particles[b].x,dy=particles[a].y-particles[b].y,d=Math.sqrt(dx*dx+dy*dy);if(d<130){ctx.strokeStyle=S.accent;ctx.globalAlpha=(1-d/130)*.4;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(particles[a].x,particles[a].y);ctx.lineTo(particles[b].x,particles[b].y);ctx.stroke();ctx.globalAlpha=1;}}}
     ctx.fillStyle=S.accent;ctx.globalAlpha=.65;
-    particles.forEach(function(p){
-      p.x+=p.vx;p.y+=p.vy;
-      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
-    });
-    ctx.globalAlpha=1;
-    animFrame=requestAnimationFrame(draw);
+    particles.forEach(function(p){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+    ctx.globalAlpha=1;animFrame=requestAnimationFrame(draw);
   }
   draw();
+}
+
+function animateUnlock(){
+  var btn=$('lock-icon-btn');
+  btn.classList.remove('pop');void btn.offsetWidth;
+  btn.classList.add('unlocked','pop');
+  var shackle=$('lock-shackle');
+  shackle.setAttribute('d','M7 11V9a5 5 0 0 1 9.9-1');
+  setTimeout(function(){
+    btn.classList.remove('unlocked');
+    shackle.setAttribute('d','M7 11V7a5 5 0 0 1 10 0v4');
+  }, (S.unlockDuration*1000)+500);
+}
+
+function addToHistory(type){
+  var entry={t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),d:new Date().toLocaleDateString([],{month:'short',day:'numeric'}),type:type};
+  S.unlockHistory.unshift(entry);
+  if(S.unlockHistory.length>20)S.unlockHistory.pop();
+}
+
+function renderHistory(){
+  var c=$('unlock-log-container');
+  if(!S.unlockHistory||S.unlockHistory.length===0){c.innerHTML='<div style="color:#555;font-size:13px;text-align:center">No history yet</div>';return;}
+  c.innerHTML='';
+  S.unlockHistory.forEach(function(e){
+    var row=document.createElement('div');row.className='log-entry';
+    row.innerHTML='<span class="log-type'+(e.type==='fail'?' fail':'')+'">'+( e.type==='unlock'?'Unlocked':e.type==='fail'?'Failed attempt':'Lockout')+'</span><span style="color:#555">'+e.d+' '+e.t+'</span>';
+    c.appendChild(row);
+  });
+}
+
+function resetSessionTimer(){
+  if(sessionTimer)clearTimeout(sessionTimer);
+  if(S.settingsAuthed){
+    sessionTimer=setTimeout(function(){
+      S.settingsAuthed=false;
+    },S.sessionTimeout*60*1000);
+  }
 }
 
 function buildNumpad(cid,onDigit,onBack){
@@ -448,40 +469,42 @@ function buildPatGrid(cid,arr){
   for(var i=0;i<16;i++){(function(idx){var d=document.createElement('div');d.className='pat-dot';d.onclick=function(){vibrate(20);var pos=arr.indexOf(idx);if(pos===-1){arr.push(idx);d.classList.add('sel');}else{arr.splice(pos,1);d.classList.remove('sel');}};c.appendChild(d);})(i);}
 }
 function clearPat(cid,arr){arr.length=0;$(cid).querySelectorAll('.pat-dot').forEach(function(d){d.classList.remove('sel');});}
-
 function buildColorGrid(){
   var g=$('color-grid');g.innerHTML='';
-  COLORS.forEach(function(c){
-    var s=document.createElement('div');s.className='color-swatch'+(c===S.accent?' active':'');s.style.background=c;
-    s.onclick=function(){S.accent=c;applyAccent(c);if(S.bg==='geo')drawGeo();document.querySelectorAll('.color-swatch').forEach(function(x){x.classList.remove('active');});s.classList.add('active');};
-    g.appendChild(s);
-  });
+  COLORS.forEach(function(c){var s=document.createElement('div');s.className='color-swatch'+(c===S.accent?' active':'');s.style.background=c;s.onclick=function(){S.accent=c;applyAccent(c);if(S.bg==='geo')drawGeo();document.querySelectorAll('.color-swatch').forEach(function(x){x.classList.remove('active');});s.classList.add('active');};g.appendChild(s);});
 }
 function buildFontGrid(){
   var g=$('font-grid');g.innerHTML='';
-  FONTS.forEach(function(f){
-    var b=document.createElement('button');b.className='font-btn'+(f.n===S.font?' sel':'');b.style.fontFamily="'"+f.n+"',sans-serif";b.textContent=f.l;
-    b.onclick=function(){S.font=f.n;applyFont(f.n);document.querySelectorAll('.font-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};
-    g.appendChild(b);
-  });
+  FONTS.forEach(function(f){var b=document.createElement('button');b.className='font-btn'+(f.n===S.font?' sel':'');b.style.fontFamily="'"+f.n+"',sans-serif";b.textContent=f.l;b.onclick=function(){S.font=f.n;applyFont(f.n);document.querySelectorAll('.font-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};g.appendChild(b);});
 }
 function buildBgGrid(){
   var g=$('bg-grid');g.innerHTML='';
-  BGS.forEach(function(bg){
-    var b=document.createElement('button');b.className='bg-btn'+(bg.k===S.bg?' sel':'');b.textContent=bg.l;
-    b.onclick=function(){S.bg=bg.k;applyBg(bg.k);document.querySelectorAll('.bg-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};
-    g.appendChild(b);
-  });
+  BGS.forEach(function(bg){var b=document.createElement('button');b.className='bg-btn'+(bg.k===S.bg?' sel':'');b.textContent=bg.l;b.onclick=function(){S.bg=bg.k;applyBg(bg.k);document.querySelectorAll('.bg-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};g.appendChild(b);});
 }
 
+function switchTab(t){
+  ['general','appearance','advanced'].forEach(function(x){
+    $('tab-'+x+'-content').style.display=(x===t)?'block':'none';
+    $('tab-'+x).classList.toggle('sel',x===t);
+  });
+  if(t==='advanced'){
+    renderHistory();
+    fetch('/info').then(function(r){return r.json();}).then(function(d){
+      $('wifi-ip-display').textContent=d.ip||'Unknown';
+      $('wifi-hostname-display').textContent=(S.mdnsHostname||'picolock')+'.local';
+    }).catch(function(){
+      $('wifi-ip-display').textContent='Not available';
+      $('wifi-hostname-display').textContent=(S.mdnsHostname||'picolock')+'.local';
+    });
+  }
+}
+
+$('s-mdns').oninput=function(){$('mdns-preview').textContent=(this.value||'picolock')+'.local';};
 $('grad-from').oninput=function(){S.gradFrom=this.value;if(S.bg==='gradient')applyBg('gradient');};
 $('grad-to').oninput=function(){S.gradTo=this.value;if(S.bg==='gradient')applyBg('gradient');};
 
 document.querySelectorAll('.pin-len-btn').forEach(function(b){
-  b.onclick=function(){
-    S.pinLen=parseInt(b.dataset.len);setupPinEntry='';updateDots('sd',setupPinEntry,S.pinLen);
-    document.querySelectorAll('.pin-len-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');
-  };
+  b.onclick=function(){S.pinLen=parseInt(b.dataset.len);setupPinEntry='';updateDots('sd',setupPinEntry,S.pinLen);document.querySelectorAll('.pin-len-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');};
 });
 
 buildNumpad('setup-numpad',function(n){if(setupPinEntry.length<S.pinLen){setupPinEntry+=n;updateDots('sd',setupPinEntry,S.pinLen);}},function(){setupPinEntry=setupPinEntry.slice(0,-1);updateDots('sd',setupPinEntry,S.pinLen);});
@@ -492,14 +515,12 @@ updateDots('sd',setupPinEntry,4);
 updateDots('ld',lockPinEntry,4);
 
 $('start-btn').onclick=function(){show('s-master');};
-
 $('mp-btn').onclick=function(){
   var p1=$('mp1').value,p2=$('mp2').value;
   if(!p1){setMsg('mp-msg','Enter a password',false);return;}
   if(p1!==p2){setMsg('mp-msg','Passwords do not match',false);return;}
   S.masterPw=p1;$('mp-msg').textContent='';show('s-name');
 };
-
 $('name-btn').onclick=function(){
   var n=$('lock-name-input').value.trim()||'PicoLock';
   var g=$('lock-greeting-input').value.trim()||'Welcome';
@@ -524,7 +545,8 @@ $('method-btn').onclick=function(){
   $('lk-pin').style.display=S.method==='pin'?'':'none';
   $('lk-pattern').style.display=S.method==='pattern'?'':'none';
   $('lk-password').style.display=S.method==='password'?'':'none';
-  updateDots('ld',lockPinEntry,S.pinLen);saveConfig();show('s-lock');
+  updateDots('ld',lockPinEntry,S.pinLen);
+  saveConfig(function(){show('s-lock');});
 };
 
 function tryUnlock(){
@@ -534,20 +556,27 @@ function tryUnlock(){
   else if(S.method==='pattern')ok=S.pattern.length===lockPatSel.length&&S.pattern.every(function(v,i){return v===lockPatSel[i];});
   else ok=$('lock-pw').value===S.unlockPw;
   if(ok){
-    S.attempts=0;vibrate(60);setMsg('lock-msg','Unlocked',true);
+    S.attempts=0;vibrate(60);
+    setMsg('lock-msg','Unlocked',true);
+    animateUnlock();
+    addToHistory('unlock');
     lockPinEntry='';updateDots('ld',lockPinEntry,S.pinLen);clearPat('lock-pat',lockPatSel);$('lock-pw').value='';
     fetch('/unlock',{method:'POST'}).catch(function(){});
+    saveConfig(null);
     setTimeout(function(){$('lock-msg').textContent='';},3000);
   }else{
     S.attempts++;vibrate([50,30,50]);
+    addToHistory('fail');
     var card=$('lock-card');
     card.classList.remove('shake','flash-red');void card.offsetWidth;
     card.classList.add('shake','flash-red');
     setTimeout(function(){card.classList.remove('shake','flash-red');},400);
     lockPinEntry='';updateDots('ld',lockPinEntry,S.pinLen);clearPat('lock-pat',lockPatSel);
-    var max=parseInt($('s-attempts').value)||3;
-    if(S.attempts>=max){S.lockout=true;$('lock-normal').style.display='none';$('lockout-ui').classList.add('active');}
-    else{setMsg('lock-msg','Wrong — '+(max-S.attempts)+' left',false);}
+    var max=S.maxAttempts||3;
+    if(S.attempts>=max){
+      S.lockout=true;addToHistory('lockout');
+      $('lock-normal').style.display='none';$('lockout-ui').classList.add('active');
+    }else{setMsg('lock-msg','Wrong — '+(max-S.attempts)+' left',false);}
   }
 }
 $('unlock-btn').onclick=tryUnlock;
@@ -562,23 +591,38 @@ $('override-btn').onclick=function(){
 };
 
 $('cog-btn').onclick=function(){
+  var now=Date.now();
+  var expired=S.settingsAuthed&&(now-S.settingsAuthTime)>(S.sessionTimeout*60*1000);
+  if(expired)S.settingsAuthed=false;
   if(S.settingsAuthed){openSettings();return;}
   $('settings-auth-input').value='';$('settings-auth-msg').textContent='';show('s-settings-auth');
 };
 $('settings-auth-btn').onclick=function(){
-  if($('settings-auth-input').value===S.masterPw){S.settingsAuthed=true;openSettings();}
-  else{setMsg('settings-auth-msg','Wrong master password',false);}
+  if($('settings-auth-input').value===S.masterPw){
+    S.settingsAuthed=true;S.settingsAuthTime=Date.now();openSettings();
+  }else{setMsg('settings-auth-msg','Wrong master password',false);}
 };
+$('settings-auth-input').addEventListener('keydown',function(e){if(e.key==='Enter')$('settings-auth-btn').click();});
+
 function openSettings(){
   $('s-lock-name').value=S.lockName;$('s-greeting').value=S.greeting;
+  $('s-dur').value=S.unlockDuration;$('s-dur-v').textContent=S.unlockDuration+'s';
+  $('s-attempts').value=S.maxAttempts;$('s-attempts-v').textContent=S.maxAttempts+' tries';
+  $('s-session-timeout').value=S.sessionTimeout;$('s-session-timeout-v').textContent=S.sessionTimeout+'m';
+  $('s-mdns').value=S.mdnsHostname||'picolock';
+  $('mdns-preview').textContent=(S.mdnsHostname||'picolock')+'.local';
   $('grad-from').value=S.gradFrom;$('grad-to').value=S.gradTo;
   $('grad-picker').style.display=(S.bg==='gradient')?'block':'none';
-  buildColorGrid();buildFontGrid();buildBgGrid();show('s-settings');
+  if($('t-quick').classList.contains('on')!==S.quickUnlock){$('t-quick').classList.toggle('on');}
+  if($('t-haptics').classList.contains('on')!==S.haptics){$('t-haptics').classList.toggle('on');}
+  buildColorGrid();buildFontGrid();buildBgGrid();
+  switchTab('general');
+  show('s-settings');
 }
 $('back-btn').onclick=function(){show('s-lock');};
-$('s-dur').oninput=function(){$('s-dur-v').textContent=this.value+'s';};
-$('s-relock').oninput=function(){$('s-relock-v').textContent=this.value+'s';};
-$('s-attempts').oninput=function(){$('s-attempts-v').textContent=this.value+' tries';};
+$('s-dur').oninput=function(){S.unlockDuration=parseInt(this.value);$('s-dur-v').textContent=this.value+'s';};
+$('s-attempts').oninput=function(){S.maxAttempts=parseInt(this.value);$('s-attempts-v').textContent=this.value+' tries';};
+$('s-session-timeout').oninput=function(){S.sessionTimeout=parseInt(this.value);$('s-session-timeout-v').textContent=this.value+'m';};
 
 function toggleIt(k){
   var el=$('t-'+k);el.classList.toggle('on');
@@ -591,13 +635,15 @@ $('change-method-btn').onclick=function(){
   ['pin','pattern','password'].forEach(function(x){$('mc-'+x).classList.remove('sel');$('cred-'+x).style.display='none';});
   $('method-btn').style.display='none';$('method-msg').textContent='';show('s-method');
 };
+
 $('settings-save-btn').onclick=function(){
   var nn=$('s-lock-name').value.trim();var ng=$('s-greeting').value.trim();
   if(nn){S.lockName=nn;$('lock-title-display').textContent=nn;}
   if(ng){S.greeting=ng;$('lock-greeting-display').textContent=ng;}
   var nmp=$('s-new-mp').value;if(nmp){S.masterPw=nmp;$('s-new-mp').value='';}
-  saveConfig();
-  show('s-lock');
+  var nm=$('s-mdns').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
+  if(nm)S.mdnsHostname=nm;
+  saveConfig(function(){show('s-lock');});
 };
 
 $('wipe-btn').onclick=function(){
@@ -606,37 +652,33 @@ $('wipe-btn').onclick=function(){
   location.reload();
 };
 
-function saveConfig(){
+function saveConfig(cb){
   var cfg={
     masterPw:S.masterPw,method:S.method,pin:S.pin,
     pattern:S.pattern,unlockPw:S.unlockPw,pinLen:S.pinLen,
     lockName:S.lockName,greeting:S.greeting,
     quickUnlock:S.quickUnlock,haptics:S.haptics,
     accent:S.accent,font:S.font,bg:S.bg,
-    gradFrom:S.gradFrom,gradTo:S.gradTo
+    gradFrom:S.gradFrom,gradTo:S.gradTo,
+    unlockDuration:S.unlockDuration,maxAttempts:S.maxAttempts,
+    sessionTimeout:S.sessionTimeout,mdnsHostname:S.mdnsHostname,
+    unlockHistory:S.unlockHistory
   };
-  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).catch(function(){});
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)})
+    .then(function(r){if(cb)cb();}).catch(function(){if(cb)cb();});
 }
 
 function applyConfig(cfg){
-  S.masterPw=cfg.masterPw||'';
-  S.method=cfg.method||'';
-  S.pin=cfg.pin||'';
-  S.pattern=cfg.pattern||[];
-  S.unlockPw=cfg.unlockPw||'';
-  S.pinLen=cfg.pinLen||4;
-  S.lockName=cfg.lockName||'PicoLock';
-  S.greeting=cfg.greeting||'Welcome';
-  S.quickUnlock=cfg.quickUnlock||false;
-  S.haptics=cfg.haptics!==false;
-  S.accent=cfg.accent||'#a78bfa';
-  S.font=cfg.font||'Inter';
-  S.bg=cfg.bg||'solid';
-  S.gradFrom=cfg.gradFrom||'#1a1a2e';
-  S.gradTo=cfg.gradTo||'#2d1b4e';
-  applyAccent(S.accent);
-  applyFont(S.font);
-  applyBg(S.bg);
+  S.masterPw=cfg.masterPw||'';S.method=cfg.method||'';S.pin=cfg.pin||'';
+  S.pattern=cfg.pattern||[];S.unlockPw=cfg.unlockPw||'';S.pinLen=cfg.pinLen||4;
+  S.lockName=cfg.lockName||'PicoLock';S.greeting=cfg.greeting||'Welcome';
+  S.quickUnlock=cfg.quickUnlock||false;S.haptics=cfg.haptics!==false;
+  S.accent=cfg.accent||'#a78bfa';S.font=cfg.font||'Inter';S.bg=cfg.bg||'solid';
+  S.gradFrom=cfg.gradFrom||'#1a1a2e';S.gradTo=cfg.gradTo||'#2d1b4e';
+  S.unlockDuration=cfg.unlockDuration||2;S.maxAttempts=cfg.maxAttempts||3;
+  S.sessionTimeout=cfg.sessionTimeout||10;S.mdnsHostname=cfg.mdnsHostname||'picolock';
+  S.unlockHistory=cfg.unlockHistory||[];
+  applyAccent(S.accent);applyFont(S.font);applyBg(S.bg);
   $('lock-title-display').textContent=S.lockName;
   $('lock-greeting-display').textContent=S.greeting;
   $('lk-pin').style.display=S.method==='pin'?'':'none';
@@ -647,13 +689,8 @@ function applyConfig(cfg){
 }
 
 fetch('/config').then(function(r){
-  if(r.ok)return r.json();
-  throw new Error('no config');
-}).then(function(cfg){
-  applyConfig(cfg);
-}).catch(function(){
-  show('s-welcome');
-});
+  if(r.ok)return r.json();throw new Error('no config');
+}).then(function(cfg){applyConfig(cfg);}).catch(function(){show('s-welcome');});
 </script>
 </body>
 </html>
