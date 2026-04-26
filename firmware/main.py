@@ -19,6 +19,22 @@ def get_unlock_duration():
     except:
         return getattr(secrets, "UNLOCK_DURATION", 2)
 
+def get_mdns_hostname():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            cfg = json.load(f)
+        return cfg.get("mdnsHostname", "picolock")
+    except:
+        return "picolock"
+
+def setup_mdns(hostname):
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        wlan.config(hostname=hostname)
+        print("mDNS hostname:", hostname + ".local")
+    except Exception as e:
+        print("mDNS setup failed:", e)
+
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -28,26 +44,9 @@ def connect_wifi():
         if wlan.isconnected():
             ip = wlan.ifconfig()[0]
             print("Connected:", ip)
-            return ip, wlan
+            return ip
         time.sleep(1)
     raise RuntimeError("WiFi connection failed")
-
-def setup_mdns(hostname):
-    try:
-        import network
-        sta = network.WLAN(network.STA_IF)
-        sta.config(dhcp_hostname=hostname)
-        print("mDNS hostname:", hostname + ".local")
-    except Exception as e:
-        print("mDNS setup failed:", e)
-
-def get_mdns_hostname():
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            cfg = json.load(f)
-        return cfg.get("mdnsHostname", "picolock")
-    except:
-        return "picolock"
 
 def unlock():
     dur = get_unlock_duration()
@@ -129,10 +128,13 @@ def serve(ip):
                 else:
                     send_404(conn)
             elif "GET /manifest.json" in request:
-                with open("manifest.json", "r") as f:
-                    data = f.read()
-                conn.send(("HTTP/1.1 200 OK\r\nContent-Type: application/manifest+json\r\nContent-Length: "+str(len(data))+"\r\nConnection: close\r\n\r\n").encode())
-                conn.send(data.encode())
+                try:
+                    with open("manifest.json", "r") as f:
+                        data = f.read()
+                    conn.send(("HTTP/1.1 200 OK\r\nContent-Type: application/manifest+json\r\nContent-Length: " + str(len(data)) + "\r\nConnection: close\r\n\r\n").encode())
+                    conn.send(data.encode())
+                except:
+                    send_404(conn)
             elif "GET /info" in request:
                 hostname = get_mdns_hostname()
                 info = json.dumps({"ip": ip, "hostname": hostname + ".local"})
@@ -157,6 +159,6 @@ def serve(ip):
         finally:
             conn.close()
 
-ip, wlan = connect_wifi()
+ip = connect_wifi()
 setup_mdns(get_mdns_hostname())
 serve(ip)
