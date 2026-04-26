@@ -22,7 +22,7 @@ PicoLock is a WiFi-enabled smart lock system built on the Raspberry Pi Pico WH. 
 |------|-|
 | [Raspberry Pi Pico WH](https://www.amazon.com/Raspberry-Pi-RP-PICO-WH-Pico-WH/dp/B0C58X9Q77) | Microcontroller with WiFi and pre-soldered headers |
 | [5V relay module](https://www.amazon.com/HiLetgo-Channel-optocoupler-Support-Trigger/dp/B00LW15A4W) | Switches the 12V lock circuit |
-| [12V solenoid lock](https://www.amazon.com/uxcell-Electromagnetic-Solenoid-Assembly-Electirc/dp/B07TMWY94C) | The lock itself |
+| [12V solenoid lock](https://www.amazon.com/uxcell-Electromagnetic-Solenoid-Assembly-Electirc/dp/B07TMWY94C) (decapitated) | The lock itself |
 | [12V DC power supply](https://www.amazon.com/GuanTing-Universal-adapters-Converter-Transformer/dp/B086T1N5R4) | Powers the lock |
 | Jumper wires | |
 | USB cable | Powers the Pico |
