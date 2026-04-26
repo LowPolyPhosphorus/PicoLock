@@ -11,6 +11,11 @@ CONFIG_FILE = "config.json"
 
 relay = Pin(RELAY_PIN, Pin.OUT, value=0)
 
+# Rate limiting: track unlock attempts by IP
+rate_limit = {}
+RATE_WINDOW = 60
+RATE_MAX = 10
+
 def get_unlock_duration():
     try:
         with open(CONFIG_FILE, "r") as f:
@@ -29,9 +34,32 @@ def connect_wifi():
             ip = wlan.ifconfig()[0]
             print("Connected:", ip)
             print("Serving on http://" + ip)
-            return ip
+            return ip, wlan
         time.sleep(1)
     raise RuntimeError("WiFi connection failed")
+
+def ensure_wifi(wlan):
+    if not wlan.isconnected():
+        print("WiFi lost, reconnecting...")
+        wlan.connect(secrets.WIFI_SSID, secrets.WIFI_PASSWORD)
+        for _ in range(20):
+            if wlan.isconnected():
+                print("Reconnected:", wlan.ifconfig()[0])
+                return True
+            time.sleep(1)
+        print("Reconnect failed")
+        return False
+    return True
+
+def is_rate_limited(client_ip):
+    now = time.time()
+    if client_ip not in rate_limit:
+        rate_limit[client_ip] = []
+    rate_limit[client_ip] = [t for t in rate_limit[client_ip] if now - t < RATE_WINDOW]
+    if len(rate_limit[client_ip]) >= RATE_MAX:
+        return True
+    rate_limit[client_ip].append(now)
+    return False
 
 def unlock():
     dur = get_unlock_duration()
@@ -73,6 +101,9 @@ def send_ok(conn):
 def send_404(conn):
     conn.send(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 
+def send_429(conn):
+    conn.send(b"HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+
 def get_body(conn, request):
     parts = request.split("\r\n\r\n", 1)
     body = parts[1] if len(parts) > 1 else ""
@@ -87,21 +118,27 @@ def get_body(conn, request):
             break
     return body
 
-def serve(ip):
+def serve(ip, wlan):
     addr = socket.getaddrinfo(ip, 80)[0][-1]
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
     s.listen(3)
     while True:
-        conn, addr = s.accept()
+        ensure_wifi(wlan)
+        conn, client_addr = s.accept()
+        client_ip = client_addr[0]
         try:
             request = conn.recv(2048).decode("utf-8", "ignore")
             if not request:
                 continue
             if "POST /unlock" in request:
-                unlock()
-                send_ok(conn)
+                if is_rate_limited(client_ip):
+                    print("Rate limited:", client_ip)
+                    send_429(conn)
+                else:
+                    unlock()
+                    send_ok(conn)
             elif "GET /config" in request:
                 if config_exists():
                     with open(CONFIG_FILE, "r") as f:
@@ -139,5 +176,5 @@ def serve(ip):
         finally:
             conn.close()
 
-ip = connect_wifi()
-serve(ip)
+ip, wlan = connect_wifi()
+serve(ip, wlan)
