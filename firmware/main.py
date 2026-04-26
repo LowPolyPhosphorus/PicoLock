@@ -19,22 +19,6 @@ def get_unlock_duration():
     except:
         return getattr(secrets, "UNLOCK_DURATION", 2)
 
-def get_mdns_hostname():
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            cfg = json.load(f)
-        return cfg.get("mdnsHostname", "picolock")
-    except:
-        return "picolock"
-
-def setup_mdns(hostname):
-    try:
-        wlan = network.WLAN(network.STA_IF)
-        wlan.config(hostname=hostname)
-        print("mDNS hostname:", hostname + ".local")
-    except Exception as e:
-        print("mDNS setup failed:", e)
-
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -44,6 +28,7 @@ def connect_wifi():
         if wlan.isconnected():
             ip = wlan.ifconfig()[0]
             print("Connected:", ip)
+            print("Serving on http://" + ip)
             return ip
         time.sleep(1)
     raise RuntimeError("WiFi connection failed")
@@ -108,9 +93,6 @@ def serve(ip):
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
     s.listen(3)
-    print("Serving on http://" + ip)
-    hostname = get_mdns_hostname()
-    print("Also try: http://" + hostname + ".local")
     while True:
         conn, addr = s.accept()
         try:
@@ -136,15 +118,13 @@ def serve(ip):
                 except:
                     send_404(conn)
             elif "GET /info" in request:
-                hostname = get_mdns_hostname()
-                info = json.dumps({"ip": ip, "hostname": hostname + ".local"})
+                info = json.dumps({"ip": ip})
                 send_json(conn, info)
             elif "POST /save" in request:
                 body = get_body(conn, request)
                 if body:
                     with open(CONFIG_FILE, "w") as f:
                         f.write(body)
-                    setup_mdns(get_mdns_hostname())
                 send_ok(conn)
             elif "POST /wipe" in request:
                 try:
@@ -160,5 +140,4 @@ def serve(ip):
             conn.close()
 
 ip = connect_wifi()
-setup_mdns(get_mdns_hostname())
 serve(ip)
