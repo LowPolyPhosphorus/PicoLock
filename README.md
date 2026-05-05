@@ -38,8 +38,8 @@ PicoLock is a WiFi-enabled smart lock system built on the Raspberry Pi Pico WH. 
 
 # Gallery
 <p>
-  <img src="docs/images/IMG_20260504_224834761.jpg" width="45%">
   <img src="docs/images/IMG_20260504_225106932_HDR.jpg" width="45%">
+  <img src="docs/images/IMG_20260504_225103926.jpg" width="45%">
 </p>
 
 > Opened and Closed
